@@ -1,0 +1,232 @@
+---
+title: "Automating Your Academic CV, Biosketch, and Website with R"
+subtitle: "CCHMC R Users Group"
+author: "Cole Brokamp"
+date: 2022-09-14
+format: revealjs
+slide-number: "c/t"
+footer: "Automate CV with R (Cole Brokamp)"
+standalone: true
+embed-resources: true
+preload-iframes: true
+view-distance: 3
+---
+
+## 👋 Welcome to the CCHMC R Users Group (RUG) Meeting
+
+- [join](https://teams.microsoft.com/l/team/19%3av1u66Cu-BwAAFxcsoevFL_WRazFHW6P2btSKiIxtc4s1%40thread.tacv2/conversations?groupId=27d06cf9-ea00-4d0a-b17c-1bdf4f63fb8f&tenantId=680254d4-278b-4aa1-aca8-c2600f79c533) the MS Team: `bxm5jq1` ^[Click "Join or create a team below your teams" list and look for the "Join a team with a code" card]
+- presentations and code: <https://github.com/CCHMC-RUG> 
+- events: MS Teams, emails, Outlook events
+- please share and consider [presenting](mailto:cole.brokamp@cchmc.org)
+
+## Why Automate?
+
+::: {.incremental}
+- automating a manual process is what data people do!
+- information in your CV is *data* and can be extracted for different purposes (CV/resume, biosketch, website)
+- adapt to changing formatting requirements by changing code, not data
+- don't "lock yourself in" by using a specific online service or closed source software
+- use links on [website](https://colebrokamp.com/cole-brokamp-cv.pdf) (or [with people that need](https://raw.githubusercontent.com/cole-brokamp/biosketch/master/cole-brokamp-nihbiosketch.pdf)) to access your biosketch, CV
+:::
+
+## Existing Packages for R
+
+### `datadrivencv`
+
+- <https://github.com/nstrayer/datadrivencv>
+- <https://github.com/shaziaruybal/automate-cv-rmd>
+
+### `vitae`
+
+- <https://pkg.mitchelloharawild.com/vitae>
+
+## Let's Build Our [Own](https://github.com/cole-brokamp/colebrokamp.com)
+
+![CV Automation Workflow](cv_automate.png){fig-align="center"}
+
+## YAML Ain't Markup Language (YAML)
+
+[YAML](https://yaml.org/) is a human- *and* machine-readable data-serialization language for *all* programming languages.
+
+::: {.incremental}
+- list structure often used for configuration files
+- whitespace indentation -- spaces not tabs! -- specify the structure
+- [YAML reference card](https://yaml.org/refcard.html) 
+- R (Studio?) seemingly favors `yaml` over `json`
+:::
+
+## `pubs.yaml`
+
+```yaml
+pennington-2022:
+  title: "Racial Fairness in Precision Medicine: Pediatric Asthma Prediction Algorithms"
+  author: Jordan Pennington, Erika Rasnick, Lisa J. Martin, Jocelyn M. Biagini, Tesfaye B. Mersha, Allison Parsons, Gurjit K. Khurana Hershey, Patrick Ryan, Cole Brokamp
+  journal: American Journal of Health Promotion
+  issue_pages: Online
+  year: 2022
+  doi: 10.1177/08901171221121639
+
+esteban-2022:
+  title: "Understanding Racial Disparities in Childhood Asthma Using Individual- and Neighborhood-Level Risk Factors"
+  author: Esteban Correa, Lili Ding, Andrew F. Beck, Cole Brokamp, Mekibib Altayeb, Robert S. Kahn, Tesfay Mersha
+  journal: Journal of Allergy and Clinical Immunology
+  issue_pages: In Press
+  year: 2022
+  doi: 10.1016/j.jaci.2022.07.024
+
+brokamp-2022:
+  title: "A High Resolution Spatiotemporal Fine Particulate Matter Exposure Assessment Model for the contiguous United States"
+  author: Cole Brokamp
+  journal: Environmental Advances
+  issue_pages: "7:100155"
+  year: 2022
+  doi: 10.1016/j.envadv.2021.100155
+```
+
+## `talks.yaml`
+
+```yaml
+PAS-2022:
+  title: "Decentralized Geomarker Assessment for Multi-Site Studies"
+  event: Pediatric Academic Societies Annual Meeting
+  year: 2022
+  location: Denver, CO
+
+NIH-2022:
+  title: "Challenges and Solutions for Private and Reproducible Environmental Exposure Assessment at Scale"
+  event: NIH Ethical, Legal, and Social Implications of Gene-Environment Interaction Research Workshop
+  year: 2022
+  location: Online
+  download_link: "https://colebrokamp-website.s3.amazonaws.com/talks/GxE_ELSI_Brokamp.pdf"
+```
+
+## Use R to create markdown files
+
+```{r}
+#| echo: TRUE
+#| eval: FALSE
+
+yaml::yaml.load_file("pubs.yaml") |>
+  purrr::modify(
+    ~ glue::glue(
+      .x = .,
+      "{author}. {title}. *{journal}*. {issue_pages}. {year}."
+    )
+  ) |>
+  purrr::modify(
+    ~ gsub(
+      x = .,
+      pattern = "Cole Brokamp",
+      replacement = "**Cole Brokamp**"
+    )
+  ) |>
+  paste(collapse = "\n\n") |>
+  cat(file = "pubs.md")
+```
+
+## Use R to create *complicated* markdown files
+
+<https://github.com/cole-brokamp/support/blob/main/parse_support.R>
+
+## Pandoc
+
+Convert markdown to tex file:
+
+```sh
+pandoc -o pubs.tex pubs.md
+```
+
+. . .
+
+Convert markdown to MS Word file using a reference document:
+
+```sh
+pandoc pubs.md --reference-doc=reference.dotx -o pubs.docx
+```
+
+## CV
+
+Write [CV in LaTeX](https://github.com/cole-brokamp/colebrokamp.com/blob/master/cole-brokamp-cv.tex) and include tex files in LaTeX documents:
+
+```latex
+\include{pubs}
+```
+
+
+## R Markdown
+
+#### [Site generation with {rmarkdown}](https://bookdown.org/yihui/rmarkdown/rmarkdown-site.html)
+
+```r
+rmarkdown::render_site()
+```
+
+- [`_site.yml`](https://github.com/cole-brokamp/colebrokamp.com/blob/master/_navbar.yml)
+- [`index.Rmd`](https://github.com/cole-brokamp/colebrokamp.com/blob/master/index.Rmd)
+- any `*.Rmd` and `*.md` files in root directory are rendered into HTML
+
+## Hosting on GitHub
+
+- [GitHub pages](https://pages.github.com/)
+
+
+## Workflow
+
+![](cv_automate.png){fig-align="center"}
+
+## Makefile
+
+[Make](https://www.gnu.org/software/make/)
+
+```sh
+all: my_pubs.docx my_cv.pdf site
+
+pubs.md talks.md: pubs.yaml talks.yaml
+		R CMD BATCH parse.R
+
+my_pubs.docx: pubs.md 
+		pandoc pubs.md --reference-doc=reference.dotx -o my_pubs.docx
+
+cv.pdf: pubs.tex talks.tex cv.tex
+		texfot pdflatex cv.tex
+
+site: pubs.md talks.md cv.pdf
+		R -e "rmarkdown::render_site(encoding = 'UTF-8')"
+		cp cole-brokamp-cv.pdf docs/cv.pdf
+		open docs/index.html
+```
+
+## Update Your CV
+
+1. edit `pubs.yaml` and `talks.yaml`
+2. `make all`
+3. (commit & push)
+
+## Applications
+
+- [Website](https://github.com/cole-brokamp/colebrokamp.com)
+- [NIH biosketch](https://github.com/cole-brokamp/biosketch)
+- [NIH Other Support](https://github.com/cole-brokamp/support)
+
+## R-Centric Alternatives
+
+- `pandoc`: {[rmarkdown](https://rmarkdown.rstudio.com/docs/reference/pandoc_args.html)}, `system2()`
+- `Make`: {[targets](https://books.ropensci.org/targets/)}
+- `LaTeX`: {[TinyTeX](https://yihui.org/tinytex/)}
+- `GitHub`: {[gert](https://docs.ropensci.org/gert/)}, RStudio
+
+## Extensions
+
+::: {.incremental}
+- use alternative data storage solutions (Google spreadsheets, local CSV)
+- use Google Scholar, ORCID, etc. API to get publications
+- automate citation creation with a PubMed/DOI API
+- hosting and download of published manuscripts
+- GitHub actions to automate `make`ing and deployment
+:::
+
+## R as an interface to other tools/languages
+
+- bottleneck for data science programming often around reading/writing (instead of executing) code
+- R considered as a "user interface"
+- DSL languages in R for computing on code
